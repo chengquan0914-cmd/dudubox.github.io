@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!-- 文档声明：HTML5标准，指定页面语言为中文简体 -->
+<head>
+    <meta charset="UTF-8">
+    <!-- 字符编码设置：UTF-8（兼容所有中文和特殊字符） -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 响应式配置：页面宽度适配设备屏幕，初始缩放比例1.0（适配手机/电脑） -->
+    <title>RFID信息-车管系统</title>
+    <!-- 页面标题：RFID信息-车管系统-->
+    <style>
+        /* 字体引入：定义抖音体（优先使用本地安装的抖音体，无则降级为微软雅黑） */
+        @font-face {
+            font-family: "DouyinFont"; /* 自定义字体名称 */
+            src: local("抖音体"), local("Douyin Font"); /* 查找本地字体文件 */
+        }
+        /* 全局样式重置与基础设置：作用于所有元素 */
+        * {
+            margin: 0; /* 清除默认外边距 */
+            padding: 0; /* 清除默认内边距 */
+            box-sizing: border-box; /* 盒子模型：宽度=内容+内边距+边框（避免宽度溢出） */
+            font-family: "DouyinFont", "微软雅黑", Microsoft YaHei, sans-serif; /* 字体优先级：抖音体→微软雅黑→系统默认无衬线字体 */
+        }
+        /* 页面主体样式 */
+        body {
+            background-color: #f5f5f5; /* 页面背景色：浅灰色 */
+            padding: 15px; /* 页面内边距：上下左右各15px */
+            font-size: 16px; /* 基础字体大小：16px */
+            position: relative; /* 相对定位：作为子元素绝对定位的参考 */
+            min-height: 120vh; /* 最小高度：120%视口高度（确保页面足够高，避免水印被截断） */
+        }
+        /* 水印容器样式：承载所有水印内容 */
+        .watermark-container {
+            position: fixed; /* 固定定位：不随页面滚动，始终在屏幕可视区域 */
+            top: 0; /* 距离顶部0px */
+            left: 0; /* 距离左侧0px */
+            width: 100%; /* 宽度：100%屏幕宽度 */
+            height: 200%; /* 高度：200%屏幕高度（覆盖滚动后的区域） */
+            pointer-events: none; /* 鼠标事件穿透：点击时忽略水印，触发下方元素事件 */
+            z-index: 3; /* 层级：3（最高层级） */
+        }
+        /* 头部区域样式：包含关闭按钮、域名显示 */
+        .header {
+            display: flex; /* 弹性布局：子元素横向排列 */
+            justify-content: space-between; /* 子元素两端对齐 */
+            align-items: center; /* 子元素垂直居中 */
+            margin-bottom: 18px; /* 底部外边距：18px（与下方内容间距） */
+            font-size: 18px; /* 字体大小：18px */
+            position: relative; /* 相对定位：层级高于水印 */
+            z-index: 2; /* 层级：2（确保不被水印遮挡） */
+        }
+        /* 关闭按钮样式 */
+        .header .close {
+            font-size: 24px; /* 字体大小：24px */
+            cursor: pointer; /* 鼠标样式：指针（提示可点击） */
+        }
+        /* 内容区域样式：承载核心信息（车牌号、车主等） */
+        .content {
+            position: relative; /* 相对定位：不固定，随页面正常布局 */
+            z-index: 2; /* 层级：2（确保不被水印遮挡） */
+        }
+        /* 信息项样式：每一行核心信息（如车牌号行、车主行） */
+        .info-item {
+            display: flex; /* 弹性布局：标签和值横向排列 */
+            margin-bottom: 20px; /* 底部外边距：20px（行与行之间的间距） */
+            line-height: 24px; /* 行高：24px（文字垂直居中，控制行距） */
+            padding-bottom: 5px; /* 底部内边距：5px（与下边框间距） */
+            border-bottom: 1px solid rgba(150, 150, 150, 0.2); /* 下边框：浅灰色半透明（分隔行） */
+        }
+        /* 信息项标签样式：如"车牌号"、"车主姓名" */
+        .info-item .label {
+            width: 80px; /* 固定宽度：80px（确保所有标签对齐） */
+            color: #666; /* 字体颜色：深灰色 */
+        }
+        /* 信息项值样式：如"赣AE1205B"、"李**" */
+        .info-item .value {
+            flex: 1; /* 弹性占比：1（占据剩余所有宽度） */
+            color: #333; /* 字体颜色：黑色（更醒目） */
+        }
+        /* 防伪图片容器：仅承载图片型防伪码 */
+        .anti-counterfeit {
+            width: 100%;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        /* 图片型防伪码样式：自适应容器，保持比例 */
+        .anti-counterfeit img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain; /* 保持图片比例，不拉伸 */
+        }
+        /* 水印文字样式：页面背景水印 */
+        .watermark {
+            position: absolute; /* 绝对定位：自由定位在容器内 */
+            font-size: 18px; /* 字体大小：18px */
+            font-weight: bold; /* 字体粗细：粗体 */
+            transform: rotate(-20deg); /* 旋转：-20度（倾斜效果） */
+            white-space: pre; /* 空白处理：保留换行符（车牌号和时间分行显示） */
+            color: rgba(0, 211, 187, 0.2); /* 颜色：浅绿色，透明度0.2*/
+        }
+    </style>
+</head>
+<body>
+    <!-- 水印容器：动态生成的水印会插入到这里 -->
+    <div class="watermark-container" id="watermark-container"></div>
+
+    <!-- 头部区域 -->
+    <div class="header">
+        <div class="close">×</div> <!-- 关闭按钮（仅显示，无实际功能） -->
+        <div class="domain">bmp.dudubox.com</div> <!-- 域名显示（装饰性） -->
+        <div>...</div> <!-- 占位元素（保持弹性布局两端对齐） -->
+    </div>
+
+    <!-- 核心内容区域 -->
+    <div class="content">
+        <!-- 车牌号信息行 -->
+        <div class="info-item">
+            <div class="label">车牌号</div> <!-- 标签 -->
+            <div class="value">赣AE1205B</div> <!-- 固定值 -->
+        </div>
+        <!-- 车主姓名信息行 -->
+        <div class="info-item">
+            <div class="label">车主姓名</div> <!-- 标签 -->
+            <div class="value">李**</div> <!-- 固定值 -->
+        </div>
+        <!-- 入网时间信息行 -->
+        <div class="info-item">
+            <div class="label">入网时间</div> <!-- 标签 -->
+            <div class="value">2023-11-01 15:46:25</div> <!-- 固定值 -->
+        </div>
+        <!-- 防伪图片区域：仅显示图片型防伪码 -->
+        <div class="info-item">
+            <div class="label">防伪图片</div> <!-- 标签 -->
+            <div class="value">
+                <div class="anti-counterfeit">
+                    <!-- 图片型防伪码：替换src为你的防伪图片地址即可 -->
+                    <img src="https://i.imgs.ovh/2025/12/07/CPzHTL.png" alt="CPzHTL.png" border="0" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 固定水印配置（无自定义功能）
+        const watermarkConfig = {
+            plateNumber: '赣AE1205B',
+            createTime: '2023-11-01 15:46:25',
+            color: '#00D3BB',
+            opacity: 0.2
+        };
+
+        // 生成固定水印（仅初始化一次，无修改功能）
+        function createWatermarks() {
+            const container = document.getElementById('watermark-container');
+            container.innerHTML = '';
+            const colCount = 2; // 水印列数
+            const rowCount = 5; // 水印行数
+            const width = 100 / colCount;
+            const height = 11.5;
+            const watermarkText = `${watermarkConfig.plateNumber}\n${watermarkConfig.createTime}`;
+
+            for (let row = 0; row < rowCount; row++) {
+                for (let col = 0; col < colCount; col++) {
+                    const watermark = document.createElement('div');
+                    watermark.className = 'watermark';
+                    watermark.innerText = watermarkText;
+                    watermark.style.left = `${col * width + 5}%`;
+                    watermark.style.top = `${row * height + 2}%`;
+                    watermark.style.color = `${watermarkConfig.color}${Math.round(watermarkConfig.opacity * 255).toString(16).padStart(2, '0')}`;
+                    container.appendChild(watermark);
+                }
+            }
+        }
+
+        // 页面加载完成后生成水印
+        window.onload = createWatermarks;
+    </script>
+</body>
+</html>
